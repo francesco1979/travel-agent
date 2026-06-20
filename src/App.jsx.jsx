@@ -62,35 +62,34 @@ function buildFlightLinks({ orig, dest, destCity, dateOut, dateReturn, pax, airl
   ];
 }
 
-function buildHotelLinks({ destCity, dateOut, dateReturn, pax, hotelName, boardType }) {
+function buildHotelLinks({ destCity, dateOut, dateReturn, pax, hotelName, boardType, children }) {
   const checkin  = dateOut    || "";
   const checkout = dateReturn || "";
   const encoded  = encodeURIComponent(destCity||"");
-  const hotelEnc = encodeURIComponent(hotelName||"");
   const adults   = pax || 2;
+  const kids     = children || [];
 
-  // Booking.com formato corretto 2024
   const bookingBoard = { ro:"1", bb:"2", hb:"3", fb:"4", ai:"9", any:"" };
   const bBoard = bookingBoard[boardType||"any"]||"";
 
-  // date formato YYYY-MM-DD già ok
-  const bookingUrl = `https://www.booking.com/searchresults.it.html?ss=${encoded}&checkin_year=${checkin.split("-")[0]}&checkin_month=${parseInt(checkin.split("-")[1])}&checkin_monthday=${parseInt(checkin.split("-")[2])}&checkout_year=${checkout.split("-")[0]}&checkout_month=${parseInt(checkout.split("-")[1])}&checkout_monthday=${parseInt(checkout.split("-")[2])}&group_adults=${adults}&no_rooms=1&group_children=0&nr_rooms=1${bBoard?"&nflt=mealplan%3D"+bBoard:""}`;
+  // Bambini per Booking: group_children=N + age=X per ogni bambino
+  const childrenParams = kids.length > 0
+    ? `&group_children=${kids.length}&`+kids.map(a=>`age=${a}`).join("&")
+    : "&group_children=0";
 
-  // Google Hotels formato corretto
-  const googleUrl = `https://www.google.com/travel/hotels/entity/${encoded}?q=${encoded}+hotel&dates=${checkin},${checkout}&adults=${adults}`;
+  const bookingUrl = `https://www.booking.com/searchresults.it.html?ss=${encoded}&checkin_year=${checkin.split("-")[0]}&checkin_month=${parseInt(checkin.split("-")[1])}&checkin_monthday=${parseInt(checkin.split("-")[2])}&checkout_year=${checkout.split("-")[0]}&checkout_month=${parseInt(checkout.split("-")[1])}&checkout_monthday=${parseInt(checkout.split("-")[2])}&group_adults=${adults}&no_rooms=1${childrenParams}${bBoard?"&nflt=mealplan%3D"+bBoard:""}`;
 
-  // Expedia formato corretto
-  const expediaUrl = `https://www.expedia.it/Hotel-Search?destination=${encoded}&startDate=${checkin}&endDate=${checkout}&adults=${adults}&rooms=1`;
-  const hotelsUrl  = `https://it.hotels.com/search.do?q-destination=${encoded}&q-check-in=${checkin}&q-check-out=${checkout}&q-rooms=1&q-room-0-adults=${adults}`;
+  const googleUrl  = `https://www.google.com/travel/hotels?q=${encoded}+hotel&dates=${checkin},${checkout}&adults=${adults}`;
+  const expediaUrl = `https://www.expedia.it/Hotel-Search?destination=${encoded}&startDate=${checkin}&endDate=${checkout}&adults=${adults}&children=${kids.length}&rooms=1`;
+  const hotelsUrl  = `https://it.hotels.com/search.do?q-destination=${encoded}&q-check-in=${checkin}&q-check-out=${checkout}&q-rooms=1&q-room-0-adults=${adults}&q-room-0-children=${kids.length}`;
 
-  // TripAdvisor con date
-  const taUrl = `https://www.tripadvisor.it/Hotels-g${encoded}-oa0-Hotels.html#LEAF_GEO_LIST`;
+  const tipText = `${adults} adulti${kids.length>0?` · ${kids.length} bambini (${kids.join(", ")} anni)`:""}`;
 
   return [
-    { name:"Booking.com",  logo:"🏨", commission:"~15%", url:bookingUrl, tip:`Seleziona ${adults} adulti quando apri la pagina`  },
-    { name:"Google Hotels",logo:"🔍", commission:"0%",   url:googleUrl,  tip:`Controlla date e ospiti nella pagina` },
-    { name:"Hotels.com",   logo:"🛏", commission:"~12%", url:hotelsUrl,  tip:`Verifica ${adults} adulti nella ricerca` },
-    { name:"Expedia",      logo:"📦", commission:"~15%", url:expediaUrl, tip:`Seleziona ${adults} adulti nella pagina` },
+    { name:"Booking.com",  logo:"🏨", commission:"~15%", url:bookingUrl,  tip:`Verifica: ${tipText}` },
+    { name:"Google Hotels",logo:"🔍", commission:"0%",   url:googleUrl,   tip:`Controlla ospiti nella pagina` },
+    { name:"Hotels.com",   logo:"🛏", commission:"~12%", url:hotelsUrl,   tip:`Verifica: ${tipText}` },
+    { name:"Expedia",      logo:"📦", commission:"~15%", url:expediaUrl,  tip:`Verifica: ${tipText}` },
   ];
 }
 
@@ -411,8 +410,8 @@ function FlightCard({f,sel,best,onSel,showAR,dateOut,dateReturn}){
   </CardWrap>;
 }
 
-function HotelCard({h,sel,best,onSel,dest,dateOut,dateReturn,boardType}){
-  const deepLinks = buildHotelLinks({ destCity:dest, dateOut, dateReturn, pax:h.n?1:1, hotelName:h.name, boardType });
+function HotelCard({h,sel,best,onSel,dest,dateOut,dateReturn,boardType,adults,children}){
+  const deepLinks = buildHotelLinks({ destCity:dest, dateOut, dateReturn, pax:adults||2, hotelName:h.name, boardType, children:children||[] });
   return <CardWrap accent="#a78bfa" selected={sel} best={best} onClick={onSel}>
     <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",flexWrap:"wrap",gap:8}}>
       <div><div style={{fontWeight:700,color:"#e2e8f0",fontSize:"0.88rem",marginBottom:4}}>{h.name}</div><div style={{display:"flex",alignItems:"center",gap:8}}><Stars n={h.stars}/><span style={{color:"rgba(255,255,255,0.38)",fontSize:"0.7rem"}}>📍 {h.zone}</span></div></div>
@@ -768,7 +767,7 @@ export default function App(){
 
       <div style={{display:"flex",flexDirection:"column",gap:10}}>
         {tab==="fl"&&(data.fl.length>0?data.fl.map((f,i)=><FlightCard key={f.id} f={f} sel={sel.fl?.id===f.id} best={i===0} onSel={()=>setSel(s=>({...s,fl:f}))} showAR={showAR} dateOut={form.dateOut} dateReturn={form.dateRet}/>):<div style={{textAlign:"center",padding:"40px",color:"rgba(255,255,255,0.3)"}}>Nessun volo trovato</div>)}
-        {tab==="ht"&&(data.ht.length>0?data.ht.map((h,i)=><HotelCard key={h.id} h={h} sel={sel.ht?.id===h.id} best={i===0} onSel={()=>setSel(s=>({...s,ht:h,rs:null}))} dest={form.dest} dateOut={form.dateOut} dateReturn={form.dateRet} boardType={form.boardType}/>):<div style={{textAlign:"center",padding:"40px",color:"rgba(255,255,255,0.3)"}}>Nessun hotel con questi filtri. <button onClick={()=>setHotelFilters([])} style={{background:"none",border:"none",color:"#a78bfa",cursor:"pointer",textDecoration:"underline"}}>Rimuovi filtri</button></div>)}
+        {tab==="ht"&&(data.ht.length>0?data.ht.map((h,i)=><HotelCard key={h.id} h={h} sel={sel.ht?.id===h.id} best={i===0} onSel={()=>setSel(s=>({...s,ht:h,rs:null}))} dest={form.dest} dateOut={form.dateOut} dateReturn={form.dateRet} boardType={form.boardType} adults={form.adults} children={form.children}/>):<div style={{textAlign:"center",padding:"40px",color:"rgba(255,255,255,0.3)"}}>Nessun hotel con questi filtri. <button onClick={()=>setHotelFilters([])} style={{background:"none",border:"none",color:"#a78bfa",cursor:"pointer",textDecoration:"underline"}}>Rimuovi filtri</button></div>)}
         {tab==="rs"&&(data.rs.length>0?data.rs.map((r,i)=><ResortCard key={r.id} r={r} sel={sel.rs?.id===r.id} best={i===0} onSel={()=>setSel(s=>({...s,rs:r,ht:null}))} dest={form.dest} dateOut={form.dateOut} dateReturn={form.dateRet}/>):<div style={{textAlign:"center",padding:"40px",color:"rgba(255,255,255,0.3)"}}>Nessun resort con questi filtri. <button onClick={()=>setResortFilters([])} style={{background:"none",border:"none",color:"#fb923c",cursor:"pointer",textDecoration:"underline"}}>Rimuovi filtri</button></div>)}
       </div>
 
