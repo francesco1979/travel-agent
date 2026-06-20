@@ -67,70 +67,61 @@ function buildHotelLinks({ destCity, dateOut, dateReturn, pax, hotelName, boardT
   const checkout = dateReturn || "";
   const encoded  = encodeURIComponent(destCity||"");
   const hotelEnc = encodeURIComponent(hotelName||"");
-  const boardMap = { ro:"nflt=mealplan%3D1", bb:"nflt=mealplan%3D2", hb:"nflt=mealplan%3D3", fb:"nflt=mealplan%3D4", ai:"nflt=mealplan%3D9", any:"" };
-  const boardFilter = boardMap[boardType||"any"]||"";
+  const adults   = pax || 2;
+
+  // Booking.com formato corretto 2024
+  const bookingBoard = { ro:"1", bb:"2", hb:"3", fb:"4", ai:"9", any:"" };
+  const bBoard = bookingBoard[boardType||"any"]||"";
+
+  // date formato YYYY-MM-DD già ok
+  const bookingUrl = `https://www.booking.com/searchresults.it.html?ss=${encoded}&checkin_year=${checkin.split("-")[0]}&checkin_month=${parseInt(checkin.split("-")[1])}&checkin_monthday=${parseInt(checkin.split("-")[2])}&checkout_year=${checkout.split("-")[0]}&checkout_month=${parseInt(checkout.split("-")[1])}&checkout_monthday=${parseInt(checkout.split("-")[2])}&group_adults=${adults}&no_rooms=1&group_children=0${bBoard?"&nflt=mealplan%3D"+bBoard:""}`;
+
+  // Google Hotels formato corretto
+  const googleUrl = `https://www.google.com/travel/hotels/entity/${encoded}?q=${encoded}+hotel&dates=${checkin},${checkout}&adults=${adults}`;
+
+  // Expedia formato corretto
+  const expediaUrl = `https://www.expedia.it/Hotel-Search?destination=${encoded}&startDate=${checkin}&endDate=${checkout}&adults=${adults}&rooms=1`;
+  const hotelsUrl  = `https://it.hotels.com/search.do?q-destination=${encoded}&q-check-in=${checkin}&q-check-out=${checkout}&q-rooms=1&q-room-0-adults=${adults}`;
+
+  // TripAdvisor con date
+  const taUrl = `https://www.tripadvisor.it/Hotels-g${encoded}-oa0-Hotels.html#LEAF_GEO_LIST`;
+
   return [
-    {
-      name: "Booking.com",
-      logo: "🏨",
-      commission: "~15%",
-      url: `https://www.booking.com/search.it.html?ss=${encoded}&checkin=${checkin}&checkout=${checkout}&group_adults=${pax}&no_rooms=1${boardFilter?"&"+boardFilter:""}`,
-    },
-    {
-      name: "Hotels.com",
-      logo: "🛏",
-      commission: "~12%",
-      url: `https://it.hotels.com/search.do?q-destination=${encoded}&q-check-in=${checkin}&q-check-out=${checkout}&q-rooms=1&q-room-0-adults=${pax}`,
-    },
-    {
-      name: "Google Hotels",
-      logo: "🔍",
-      commission: "0%",
-      url: `https://www.google.com/travel/hotels?q=${hotelEnc}+${encoded}&checkin=${checkin}&checkout=${checkout}&adults=${pax}`,
-    },
-    {
-      name: "Expedia",
-      logo: "📦",
-      commission: "~15%",
-      url: `https://www.expedia.it/Hotel-Search?destination=${encoded}&startDate=${checkin}&endDate=${checkout}&adults=${pax}`,
-    },
+    { name:"Booking.com",  logo:"🏨", commission:"~15%", url:bookingUrl  },
+    { name:"Google Hotels",logo:"🔍", commission:"0%",   url:googleUrl   },
+    { name:"Hotels.com",   logo:"🛏", commission:"~12%", url:hotelsUrl   },
+    { name:"Expedia",      logo:"📦", commission:"~15%", url:expediaUrl  },
   ];
 }
 
 function buildResortLinks({ destCity, dateOut, dateReturn, pax, resortName, chain }) {
-  const encoded = encodeURIComponent(destCity||"");
+  const encoded  = encodeURIComponent(destCity||"");
   const checkin  = dateOut    || "";
   const checkout = dateReturn || "";
   const chainLow = (chain||"").toLowerCase();
+  const adults   = pax || 2;
+
+  const directUrl = chainLow.includes("alpitour")
+    ? `https://www.alpitour.it/offerte-vacanze/?dest=${encoded}&partenza=${checkin}&adulti=${adults}`
+    : chainLow.includes("valtur")
+    ? `https://www.valtur.it/offerte/?destinazione=${encoded}&adulti=${adults}`
+    : chainLow.includes("club")
+    ? `https://www.clubmed.it/l/villaggi-e-resort?query=${encoded}&startDate=${checkin}&endDate=${checkout}&adults=${adults}`
+    : chainLow.includes("tui")
+    ? `https://www.tui.it/offerte/?destination=${encoded}&depDate=${checkin}&pax=${adults}`
+    : chainLow.includes("iberostar")
+    ? `https://www.iberostar.com/it/hotel/?destination=${encoded}&checkin=${checkin}&checkout=${checkout}&adults=${adults}`
+    : chainLow.includes("barcelo")
+    ? `https://www.barcelo.com/it-it/hotel/?destination=${encoded}&checkin=${checkin}&checkout=${checkout}&adults=${adults}`
+    : `https://www.google.com/search?q=${encodeURIComponent((resortName||"")+" sito ufficiale prenotazione")}`;
+
+  const directName = chainLow.includes("alpitour")?"Alpitour":chainLow.includes("valtur")?"Valtur":chainLow.includes("club")?"Club Med":chainLow.includes("tui")?"TUI":chainLow.includes("iberostar")?"Iberostar":chainLow.includes("barcelo")?"Barceló":"Sito Diretto";
+  const directComm = chainLow.includes("alpitour")||chainLow.includes("valtur")?"~5%":"0%";
+
   return [
-    {
-      name: chainLow.includes("alpitour") ? "Alpitour" : chainLow.includes("valtur") ? "Valtur" : chainLow.includes("club") ? "Club Med" : chainLow.includes("tui") ? "TUI" : chainLow.includes("iberostar") ? "Iberostar" : "Sito Diretto",
-      logo: "🌴",
-      commission: chainLow.includes("alpitour")||chainLow.includes("valtur") ? "~5%" : "0%",
-      url: chainLow.includes("alpitour")
-        ? `https://www.alpitour.it/offerte-vacanze/?dest=${encoded}&partenza=${checkin}&ritorno=${checkout}&adulti=${pax}`
-        : chainLow.includes("valtur")
-        ? `https://www.valtur.it/offerte/?destinazione=${encoded}`
-        : chainLow.includes("club")
-        ? `https://www.clubmed.it/l/villaggi-e-resort?query=${encoded}`
-        : chainLow.includes("tui")
-        ? `https://www.tui.it/offerte/?destination=${encoded}&depDate=${checkin}`
-        : chainLow.includes("iberostar")
-        ? `https://www.iberostar.com/it/hotel/${encoded}/`
-        : `https://www.google.com/search?q=${encodeURIComponent(resortName||"")}+sito+ufficiale`,
-    },
-    {
-      name: "Booking.com",
-      logo: "🏨",
-      commission: "~15%",
-      url: `https://www.booking.com/search.it.html?ss=${encoded}&checkin=${checkin}&checkout=${checkout}&group_adults=${pax}&no_rooms=1&nflt=property_type%3D4`,
-    },
-    {
-      name: "TripAdvisor",
-      logo: "🦉",
-      commission: "~8%",
-      url: `https://www.tripadvisor.it/Search?q=${encoded}+resort&searchSessionId=`,
-    },
+    { name:directName,    logo:"🌴", commission:directComm, url:directUrl },
+    { name:"Booking.com", logo:"🏨", commission:"~15%", url:`https://www.booking.com/searchresults.it.html?ss=${encoded}&checkin_year=${checkin.split("-")[0]}&checkin_month=${parseInt(checkin.split("-")[1])}&checkin_monthday=${parseInt(checkin.split("-")[2])}&checkout_year=${checkout.split("-")[0]}&checkout_month=${parseInt(checkout.split("-")[1])}&checkout_monthday=${parseInt(checkout.split("-")[2])}&group_adults=${adults}&no_rooms=1&nflt=property_type%3D4` },
+    { name:"TripAdvisor", logo:"🦉", commission:"~8%",      url:`https://www.tripadvisor.it/Search?q=${encoded}+resort&searchSessionId=` },
   ];
 }
 
