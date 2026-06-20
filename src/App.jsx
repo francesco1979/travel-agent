@@ -74,7 +74,7 @@ function buildHotelLinks({ destCity, dateOut, dateReturn, pax, hotelName, boardT
   const bBoard = bookingBoard[boardType||"any"]||"";
 
   // date formato YYYY-MM-DD già ok
-  const bookingUrl = `https://www.booking.com/searchresults.it.html?ss=${encoded}&checkin_year=${checkin.split("-")[0]}&checkin_month=${parseInt(checkin.split("-")[1])}&checkin_monthday=${parseInt(checkin.split("-")[2])}&checkout_year=${checkout.split("-")[0]}&checkout_month=${parseInt(checkout.split("-")[1])}&checkout_monthday=${parseInt(checkout.split("-")[2])}&group_adults=${adults}&no_rooms=1&group_children=0${bBoard?"&nflt=mealplan%3D"+bBoard:""}`;
+  const bookingUrl = `https://www.booking.com/searchresults.it.html?ss=${encoded}&checkin_year=${checkin.split("-")[0]}&checkin_month=${parseInt(checkin.split("-")[1])}&checkin_monthday=${parseInt(checkin.split("-")[2])}&checkout_year=${checkout.split("-")[0]}&checkout_month=${parseInt(checkout.split("-")[1])}&checkout_monthday=${parseInt(checkout.split("-")[2])}&group_adults=${adults}&no_rooms=1&group_children=0&nr_rooms=1${bBoard?"&nflt=mealplan%3D"+bBoard:""}`;
 
   // Google Hotels formato corretto
   const googleUrl = `https://www.google.com/travel/hotels/entity/${encoded}?q=${encoded}+hotel&dates=${checkin},${checkout}&adults=${adults}`;
