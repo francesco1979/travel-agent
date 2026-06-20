@@ -87,10 +87,10 @@ function buildHotelLinks({ destCity, dateOut, dateReturn, pax, hotelName, boardT
   const taUrl = `https://www.tripadvisor.it/Hotels-g${encoded}-oa0-Hotels.html#LEAF_GEO_LIST`;
 
   return [
-    { name:"Booking.com",  logo:"🏨", commission:"~15%", url:bookingUrl  },
-    { name:"Google Hotels",logo:"🔍", commission:"0%",   url:googleUrl   },
-    { name:"Hotels.com",   logo:"🛏", commission:"~12%", url:hotelsUrl   },
-    { name:"Expedia",      logo:"📦", commission:"~15%", url:expediaUrl  },
+    { name:"Booking.com",  logo:"🏨", commission:"~15%", url:bookingUrl, tip:`Seleziona ${adults} adulti quando apri la pagina`  },
+    { name:"Google Hotels",logo:"🔍", commission:"0%",   url:googleUrl,  tip:`Controlla date e ospiti nella pagina` },
+    { name:"Hotels.com",   logo:"🛏", commission:"~12%", url:hotelsUrl,  tip:`Verifica ${adults} adulti nella ricerca` },
+    { name:"Expedia",      logo:"📦", commission:"~15%", url:expediaUrl, tip:`Seleziona ${adults} adulti nella pagina` },
   ];
 }
 
@@ -336,15 +336,22 @@ function QpBadge({score}){
 function Stars({n}){ return <span style={{color:"#f59e0b",fontSize:"0.8rem"}}>{"★".repeat(n)}{"☆".repeat(5-n)}</span>; }
 function MultiLinks({links}){
   if(!links||links.length===0) return null;
-  return <div style={{display:"flex",flexWrap:"wrap",gap:5,marginTop:9}}>
+  return <div style={{display:"flex",flexDirection:"column",gap:6,marginTop:9}}>
     {links.map((p,i)=>(
       <a key={i} href={p.url} target="_blank" rel="noreferrer"
         onClick={e=>e.stopPropagation()}
-        style={{display:"inline-flex",alignItems:"center",gap:4,padding:"4px 10px",borderRadius:8,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"rgba(255,255,255,0.7)",fontSize:"0.68rem",textDecoration:"none",transition:"all 0.15s"}}
+        style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8,padding:"7px 12px",borderRadius:9,background:"rgba(255,255,255,0.05)",border:"1px solid rgba(255,255,255,0.12)",color:"rgba(255,255,255,0.7)",fontSize:"0.72rem",textDecoration:"none",transition:"all 0.15s"}}
         onMouseEnter={e=>e.currentTarget.style.background="rgba(255,255,255,0.1)"}
         onMouseLeave={e=>e.currentTarget.style.background="rgba(255,255,255,0.05)"}>
-        {p.logo} <span style={{fontWeight:600}}>{p.name}</span> <CommBadge pct={p.commission}/>
-        <span style={{fontSize:"0.6rem",opacity:0.5}}>↗</span>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          <span>{p.logo}</span>
+          <span style={{fontWeight:600}}>{p.name}</span>
+          <CommBadge pct={p.commission}/>
+        </div>
+        <div style={{display:"flex",alignItems:"center",gap:6}}>
+          {p.tip&&<span style={{fontSize:"0.62rem",color:"rgba(255,255,255,0.35)",fontStyle:"italic"}}>⚠️ {p.tip}</span>}
+          <span style={{fontSize:"0.7rem",opacity:0.5}}>↗</span>
+        </div>
       </a>
     ))}
   </div>;
